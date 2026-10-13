@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURA ENGINE // v3.0 Master Studio</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            900: '#030712',
+                            800: '#0f172a',
+                            700: '#1e293b',
+                            600: '#334155'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- GSAP for animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #030712;
+            color: #f3f4f6;
+            overflow-x: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-panel-hover:hover {
+            background: rgba(30, 41, 59, 0.85);
+            border-color: rgba(99, 102, 241, 0.4);
+        }
+
+        .text-gradient {
+            background: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #f472b6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .glow-indigo {
+            box-shadow: 0 0 50px -10px rgba(99, 102, 241, 0.25);
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #030712;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="min-h-screen relative selection:bg-indigo-500 selection:text-white pb-16">
+
+    <!-- Interactive Background Particle Canvas -->
+    <canvas id="neural-canvas" class="fixed inset-0 pointer-events-none z-0 opacity-40"></canvas>
+
+    <!-- Ambient Glow Blobs -->
+    <div class="fixed top-0 left-1/4 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[140px] pointer-events-none z-0"></div>
+    <div class="fixed bottom-0 right-1/4 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[140px] pointer-events-none z-0"></div>
+
+    <!-- Navigation Header -->
+    <nav class="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 py-4">
+        <div class="max-w-7xl mx-auto glass-panel rounded-2xl px-6 py-3 flex items-center justify-between glow-indigo">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('dashboard')">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                    <i data-lucide="cpu" class="w-5 h-5 text-white"></i>
+                </div>
+                <div>
+                    <span class="font-extrabold text-lg tracking-wider text-white">AURA<span class="text-indigo-400">ENGINE</span></span>
+                    <span class="block text-[10px] text-gray-400 tracking-widest font-mono">v3.0 CREATOR WORKSPACE</span>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <div class="hidden md:flex items-center gap-1 bg-dark-800/80 p-1.5 rounded-xl border border-white/5">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="px-4 py-2 rounded-lg text-sm font-semibold transition-all bg-indigo-600 text-white shadow-md">Dashboard</button>
+                <button onclick="switchTab('prompt-architect')" id="nav-prompt-architect" class="px-4 py-2 rounded-lg text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-white/5">AI Prompts</button>
+                <button onclick="switchTab('code-lab')" id="nav-code-lab" class="px-4 py-2 rounded-lg text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-white/5">Code & SQL</button>
+                <button onclick="switchTab('task-matrix')" id="nav-task-matrix" class="px-4 py-2 rounded-lg text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-white/5">Kanban Board</button>
+            </div>
+
+            <!-- Header Controls -->
+            <div class="flex items-center gap-3">
+                <button onclick="toggleAudioSynth()" id="audio-btn" title="Toggle Focus Synth" class="p-2.5 rounded-xl glass-panel hover:bg-white/10 transition-colors text-gray-300">
+                    <i data-lucide="volume-2" id="audio-icon" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Workspace Container -->
+    <main class="relative z-10 pt-28 pb-16 px-4 sm:px-6 max-w-7xl mx-auto">
+
+        <!-- ================= TAB 1: DASHBOARD ================= -->
+        <div id="tab-dashboard" class="space-y-12">
+            <div class="text-center py-12">
+                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-panel mb-6 border border-indigo-500/20 text-indigo-300 text-xs font-semibold tracking-wider uppercase">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                    Next-Gen Developer & Creator Suite
+                </div>
+                <h1 class="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight mb-6 leading-tight">
+                    Build, Prompt & <span class="text-gradient">Manage Your Code</span>
+                </h1>
+                <p class="text-base sm:text-xl text-gray-400 max-w-2xl mx-auto mb-10 font-normal">
+                    An advanced creator environment equipped with AI prompt architectures, live code/SQL sandboxes, task matrices, and focus sound synthesis.
+                </p>
+                <div class="flex flex-wrap items-center justify-center gap-4">
+                    <button onclick="switchTab('prompt-architect')" class="px-8 py-4 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 text-white font-bold hover:opacity-95 transition-all flex items-center gap-3 shadow-xl shadow-indigo-500/25">
+                        <i data-lucide="wand-2" class="w-5 h-5"></i>
+                        <span>AI Prompt Generator</span>
+                    </button>
+                    <button onclick="switchTab('code-lab')" class="px-8 py-4 rounded-2xl glass-panel text-white font-semibold hover:bg-white/10 transition-all flex items-center gap-3 border border-white/10">
+                        <i data-lucide="code-2" class="w-5 h-5 text-indigo-400"></i>
+                        <span>Open Code & SQL Lab</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Access Modules Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div onclick="switchTab('prompt-architect')" class="glass-panel p-8 rounded-3xl cursor-pointer glass-panel-hover transition-all group">
+                    <div class="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <i data-lucide="sparkles" class="w-7 h-7 text-indigo-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 text-white flex items-center gap-2">AI Prompt Architect <i data-lucide="arrow-right" class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-indigo-400"></i></h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Turn simple topic keywords into advanced, highly structured professional prompts for Midjourney, ChatGPT, and Claude.</p>
+                </div>
+
+                <div onclick="switchTab('code-lab')" class="glass-panel p-8 rounded-3xl cursor-pointer glass-panel-hover transition-all group">
+                    <div class="w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <i data-lucide="code-2" class="w-7 h-7 text-purple-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 text-white flex items-center gap-2">SQL & Code Sandbox <i data-lucide="arrow-right" class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-purple-400"></i></h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Test live HTML/CSS snippets and execute Oracle/PostgreSQL DDL queries instantly with simulated outputs.</p>
+                </div>
+
+                <div onclick="switchTab('task-matrix')" class="glass-panel p-8 rounded-3xl cursor-pointer glass-panel-hover transition-all group">
+                    <div class="w-14 h-14 rounded-2xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <i data-lucide="kanban" class="w-7 h-7 text-pink-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 text-white flex items-center gap-2">Kanban Task Matrix <i data-lucide="arrow-right" class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-pink-400"></i></h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Organize your development sprints, debugging tasks, and daily goals with a drag-and-drop workflow board.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= TAB 2: AI PROMPT ARCHITECT ================= -->
+        <div id="tab-prompt-architect" class="hidden space-y-8">
+            <div class="glass-panel p-6 sm:p-8 rounded-3xl border border-indigo-500/20">
+                <div class="max-w-2xl mb-8">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-xs font-semibold mb-2">
+                        <i data-lucide="wand-2" class="w-3.5 h-3.5"></i> AI Prompt Engine
+                    </div>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-white mb-2">AI Prompt Architect</h2>
+                    <p class="text-gray-400 text-sm">Enter any topic or idea below to instantly build fully optimized, professional prompts for image generators, LLMs, and code models.</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 uppercase mb-2">Topic / Subject</label>
+                            <input type="text" id="prompt-topic-input" class="w-full bg-dark-900 border border-white/10 rounded-xl p-3.5 text-sm text-white focus:outline-none focus:border-indigo-500" placeholder="e.g., Futuristic Cyberpunk Samurai">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-400 uppercase mb-2">Category</label>
+                                <select id="prompt-category" class="w-full bg-dark-900 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500">
+                                    <option value="image">AI Image Generation (Midjourney/DALL-E)</option>
+                                    <option value="llm">ChatGPT / LLM System Prompt</option>
+                                    <option value="code">Web Dev & Code Architecture</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-400 uppercase mb-2">Style Preset</label>
+                                <select id="prompt-style" class="w-full bg-dark-900 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500">
+                                    <option value="cinematic">Cinematic 8K</option>
+                                    <option value="cyberpunk">Cyberpunk Neon</option>
+                                    <option value="photorealistic">Ultra Photorealistic</option>
+                                    <option value="minimalist">Clean Minimalist</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button onclick="generateCustomAIPrompt()" class="w-full py-4 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/25">
+                            <i data-lucide="sparkles" class="w-4 h-4"></i> Generate Pro Prompt
+                        </button>
+                    </div>
+
+                    <div class="glass-panel p-6 rounded-2xl flex flex-col justify-between space-y-4">
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-xs font-semibold text-gray-400 uppercase">Generated Prompt Result</span>
+                                <button onclick="copyGeneratedPrompt()" class="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
+                                    <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Prompt
+                                </button>
+                            </div>
+                            <div id="prompt-output-box" class="w-full bg-dark-900 border border-white/10 rounded-xl p-4 font-mono text-sm text-gray-300 min-h-[160px] max-h-[220px] overflow-y-auto">
+                                Click "Generate Pro Prompt" to formulate an advanced AI prompt based on your topic...
+                            </div>
+                        </div>
+
+                        <div class="pt-4 border-t border-white/10">
+                            <span class="block text-xs font-semibold text-gray-400 uppercase mb-2">Concept Vector Preview</span>
+                            <div id="svg-concept-preview" class="w-full h-28 bg-dark-900 rounded-xl border border-white/10 flex items-center justify-center overflow-hidden">
+                                <svg width="100" height="100" viewBox="0 0 100 100" class="animate-spin-slow">
+                                    <circle cx="50" cy="50" r="40" stroke="#6366f1" stroke-width="4" fill="none" stroke-dasharray="60 40"></circle>
+                                    <circle cx="50" cy="50" r="25" stroke="#ec4899" stroke-width="4" fill="none" stroke-dasharray="30 30"></circle>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= TAB 3: CODE & SQL LAB ================= -->
+        <div id="tab-code-lab" class="hidden space-y-8">
+            <div class="glass-panel p-6 sm:p-8 rounded-3xl border border-purple-500/20">
+                <div class="mb-8">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 text-xs font-semibold mb-2">
+                        <i data-lucide="code-2" class="w-3.5 h-3.5"></i> Development Suite
+                    </div>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-white mb-2">SQL & HTML Code Sandbox</h2>
+                    <p class="text-gray-400 text-sm">Format SQL queries, test DDL commands (`CREATE TABLE`, `INSERT`, `SELECT`), and render live HTML snippets.</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="glass-panel p-6 rounded-2xl space-y-4">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i data-lucide="database" class="w-5 h-5 text-purple-400"></i> SQL Query Runner & Formatter
+                        </h3>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 uppercase mb-2">SQL Query Input (DDL / DML)</label>
+                            <textarea id="sql-input" rows="4" class="w-full bg-dark-900 border border-white/10 rounded-xl p-3 font-mono text-sm text-white focus:outline-none focus:border-purple-500" placeholder="create table employees (id int, name varchar(50)); select * from employees limit 5 offset 0;"></textarea>
+                        </div>
+                        <button onclick="formatSQLQuery()" class="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-sm transition-all flex items-center gap-2">
+                            <i data-lucide="check-circle-2" class="w-4 h-4"></i> Format & Execute
+                        </button>
+                        <div id="sql-output" class="w-full bg-dark-900 border border-white/10 rounded-xl p-4 font-mono text-xs text-emerald-400 min-h-[120px] overflow-x-auto">
+                            // Output table / execution log will appear here...
+                        </div>
+                    </div>
+
+                    <div class="glass-panel p-6 rounded-2xl space-y-4">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i data-lucide="layout" class="w-5 h-5 text-indigo-400"></i> Live HTML Snippet Preview
+                        </h3>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 uppercase mb-2">HTML / CSS Code</label>
+                            <textarea id="html-code-input" rows="4" oninput="renderHTMLCode()" class="w-full bg-dark-900 border border-white/10 rounded-xl p-3 font-mono text-sm text-white focus:outline-none focus:border-indigo-500"><div style="padding: 20px; background: linear-gradient(135deg, #6366f1, #ec4899); border-radius: 12px; color: white; text-align: center;">
+    <h3 style="margin:0; font-size: 18px;">Live Render Card</h3>
+    <p style="margin:5px 0 0; font-size: 12px; opacity: 0.9;">Created instantly inside AURA ENGINE</p>
+</div></textarea>
+                        </div>
+                        <div id="html-preview-frame" class="w-full h-36 bg-dark-900 border border-white/10 rounded-xl p-4 overflow-y-auto flex items-center justify-center">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= TAB 4: KANBAN TASK MATRIX ================= -->
+        <div id="tab-task-matrix" class="hidden space-y-8">
+            <div class="glass-panel p-6 sm:p-8 rounded-3xl border border-indigo-500/20">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+                    <div>
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-xs font-semibold mb-2">
+                            <i data-lucide="kanban" class="w-3.5 h-3.5"></i> Productivity Suite
+                        </div>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-white">Dynamic Task Matrix</h2>
+                        <p class="text-gray-400 text-sm">Organize your development sprints and project tasks.</p>
+                    </div>
+                    <div class="flex items-center gap-3 w-full sm:w-auto">
+                        <input type="text" id="new-task-title" placeholder="New task title..." class="bg-dark-900 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 w-full sm:w-64">
+                        <button onclick="addNewTask()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition-all whitespace-nowrap">Add Task</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="glass-panel p-6 rounded-2xl space-y-4">
+                        <div class="flex items-center justify-between font-bold text-white text-sm">
+                            <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> Backlog</span>
+                            <span id="count-backlog" class="text-xs px-2 py-0.5 rounded-full bg-white/5 font-mono">0</span>
+                        </div>
+                        <div id="tasks-backlog" class="space-y-3 min-h-[200px]" ondragover="allowDrop(event)" ondrop="dropTask(event, 'backlog')"></div>
+                    </div>
+
+                    <div class="glass-panel p-6 rounded-2xl space-y-4">
+                        <div class="flex items-center justify-between font-bold text-white text-sm">
+                            <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-indigo-400"></span> In Progress</span>
+                            <span id="count-inprogress" class="text-xs px-2 py-0.5 rounded-full bg-white/5 font-mono">0</span>
+                        </div>
+                        <div id="tasks-inprogress" class="space-y-3 min-h-[200px]" ondragover="allowDrop(event)" ondrop="dropTask(event, 'inprogress')"></div>
+                    </div>
+
+                    <div class="glass-panel p-6 rounded-2xl space-y-4">
+                        <div class="flex items-center justify-between font-bold text-white text-sm">
+                            <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> Completed</span>
+                            <span id="count-completed" class="text-xs px-2 py-0.5 rounded-full bg-white/5 font-mono">0</span>
+                        </div>
+                        <div id="tasks-completed" class="space-y-3 min-h-[200px]" ondragover="allowDrop(event)" ondrop="dropTask(event, 'completed')"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="relative z-10 py-12 px-6 border-t border-white/5 text-center text-gray-500 text-sm">
+        <p>&copy; 2026 AURA ENGINE v3.0 Creator Workspace. Built with high-performance Web APIs & Canvas.</p>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        lucide.createIcons();
+
+        function switchTab(tabId) {
+            const tabs = ['dashboard', 'prompt-architect', 'code-lab', 'task-matrix'];
+            tabs.forEach(t => {
+                const el = document.getElementById('tab-' + t);
+                const nav = document.getElementById('nav-' + t);
+                if(el) el.classList.add('hidden');
+                if(nav) {
+                    nav.classList.remove('bg-indigo-600', 'text-white', 'shadow-md');
+                    nav.classList.add('text-gray-400', 'hover:text-white', 'hover:bg-white/5');
+                }
+            });
+
+            const activeEl = document.getElementById('tab-' + tabId);
+            const activeNav = document.getElementById('nav-' + tabId);
+            if(activeEl) activeEl.classList.remove('hidden');
+            if(activeNav) {
+                activeNav.classList.remove('text-gray-400', 'hover:text-white', 'hover:bg-white/5');
+                activeNav.classList.add('bg-indigo-600', 'text-white', 'shadow-md');
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            lucide.createIcons();
+        }
+
+        // Background Neural Particle Canvas
+        const canvas = document.getElementById('neural-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height, particles = [];
+
+        function resizeCanvas() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.radius = Math.random() * 2 + 1;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                if(this.x < 0 || this.x > width) this.vx *= -1;
+                if(this.y < 0 || this.y > height) this.vy *= -1;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#818cf8';
+                ctx.fill();
+            }
+        }
+
+        for(let i = 0; i < 50; i++) particles.push(new Particle());
+
+        function animateNeural() {
+            ctx.clearRect(0, 0, width, height);
+            for(let i = 0; i < particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+                for(let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if(dist < 120) {
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.strokeStyle = `rgba(129, 140, 248, ${1 - dist / 120})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(animateNeural);
+        }
+        animateNeural();
+
+        // AI Prompt Architect
+        function generateCustomAIPrompt() {
+            const topic = document.getElementById('prompt-topic-input').value || "Quantum AI Interface";
+            const category = document.getElementById('prompt-category').value;
+            const style = document.getElementById('prompt-style').value;
+
+            let result = "";
+            if(category === 'image') {
+                result = `Masterpiece digital art of ${topic}, rendered in ${style} aesthetic, volumetric lighting, unreal engine 5 render, highly detailed textures, dramatic composition, 8k resolution --ar 16:9 --v 6.0`;
+            } else if(category === 'llm') {
+                result = `Act as an expert world-class AI architect. Provide a comprehensive, structured response regarding "${topic}". Use professional ${style} framing, ensure clear headings, code blocks where applicable, and step-by-step technical analysis.`;
+            } else {
+                result = `Create fully production-ready, clean, responsive source code for "${topic}" utilizing HTML5, Tailwind CSS, and modular JavaScript with ${style} UI styling. Include error handling and clean comments.`;
+            }
+
+            document.getElementById('prompt-output-box').innerText = result;
+        }
+
+        function copyGeneratedPrompt() {
+            const text = document.getElementById('prompt-output-box').innerText;
+            navigator.clipboard.writeText(text);
+            alert("Prompt copied to clipboard!");
+        }
+
+        // SQL Formatter & Runner
+        function formatSQLQuery() {
+            let query = document.getElementById('sql-input').value.trim();
+            if(!query) {
+                query = "SELECT * FROM employees;";
+            }
+            const keywords = ['create', 'table', 'select', 'from', 'where', 'insert', 'into', 'values', 'limit', 'offset', 'update', 'set', 'delete'];
+            let formatted = query;
+            keywords.forEach(kw => {
+                const regex = new RegExp(`\\b${kw}\\b`, 'gi');
+                formatted = formatted.replace(regex, kw.toUpperCase());
+            });
+
+            document.getElementById('sql-output').innerHTML = `// SQL Executed Successfully:\n${formatted}\n\n[RESULT TABLE SIMULATION]:\n--------------------------------------------\n| ID | NAME        | ROLE           | STATUS |\n--------------------------------------------\n| 01 | Alex Mercer | Lead Architect | ACTIVE |\n| 02 | Elena Vance | AI Engineer    | ACTIVE |\n--------------------------------------------`;
+        }
+
+        function renderHTMLCode() {
+            const code = document.getElementById('html-code-input').value;
+            document.getElementById('html-preview-frame').innerHTML = code;
+        }
+        renderHTMLCode();
+
+        // Kanban Task Matrix
+        let tasks = [
+            { id: 1, title: "Optimize neural particle canvas FPS", status: "completed" },
+            { id: 2, title: "Add SQL DDL query auto-formatter", status: "inprogress" },
+            { id: 3, title: "Design custom AI prompt templates", status: "backlog" }
+        ];
+
+        function renderTasks() {
+            ['backlog', 'inprogress', 'completed'].forEach(status => {
+                const container = document.getElementById('tasks-' + status);
+                const countEl = document.getElementById('count-' + status);
+                const filtered = tasks.filter(t => t.status === status);
+                if(countEl) countEl.innerText = filtered.length;
+                if(container) {
+                    container.innerHTML = filtered.map(t => `
+                        <div draggable="true" ondragstart="dragTask(event, ${t.id})" class="p-3.5 rounded-xl bg-dark-900 border border-white/10 text-sm text-white flex items-center justify-between shadow-md cursor-grab active:cursor-grabbing">
+                            <span>${t.title}</span>
+                            <button onclick="deleteTask(${t.id})" class="text-gray-500 hover:text-red-400 text-xs">&times;</button>
+                        </div>
+                    `).join('');
+                }
+            });
+        }
+
+        function addNewTask() {
+            const titleInput = document.getElementById('new-task-title');
+            if(!titleInput.value.trim()) return;
+            tasks.push({ id: Date.now(), title: titleInput.value.trim(), status: 'backlog' });
+            titleInput.value = '';
+            renderTasks();
+        }
+
+        function deleteTask(id) {
+            tasks = tasks.filter(t => t.id !== id);
+            renderTasks();
+        }
+
+        let draggedId = null;
+        function dragTask(e, id) { draggedId = id; }
+        function allowDrop(e) { e.preventDefault(); }
+        function dropTask(e, status) {
+            e.preventDefault();
+            const task = tasks.find(t => t.id === draggedId);
+            if(task) {
+                task.status = status;
+                renderTasks();
+            }
+        }
+        renderTasks();
+
+        // Web Audio Focus Synth
+        let audioCtx = null;
+        let isAudioPlaying = false;
+        let oscillator = null;
+        let gainNode = null;
+
+        function toggleAudioSynth() {
+            const icon = document.getElementById('audio-icon');
+            if(!isAudioPlaying) {
+                try {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    oscillator = audioCtx.createOscillator();
+                    gainNode = audioCtx.createGain();
+
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(174, audioCtx.currentTime);
+                    gainNode.gain.setValueAtTime(0.04, audioCtx.currentTime);
+
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+                    oscillator.start();
+
+                    isAudioPlaying = true;
+                    icon.setAttribute('data-lucide', 'volume-x');
+                    lucide.createIcons();
+                } catch(e) {
+                    console.error("Audio Context Error", e);
+                }
+            } else {
+                if(oscillator) {
+                    oscillator.stop();
+                    oscillator.disconnect();
+                }
+                if(audioCtx) audioCtx.close();
+                isAudioPlaying = false;
+                icon.setAttribute('data-lucide', 'volume-2');
+                lucide.createIcons();
+            }
+        }
+    </script>
+</body>
+</html>
